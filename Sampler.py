@@ -9,8 +9,7 @@ import numpy as np
 
 class Sampler():
 	def __init__(self, node_limit):
-		self.node_limit = node_limit
-		self.g = nx.Graph()
+		self.node_limit = node_limit		
 
 	def query_public_graph(self, team, node):
 		url= "/SNA2014/hw3/query.php?team=" + team
@@ -29,9 +28,9 @@ class Sampler():
 
 
 		if str(node) != "":
-			self.process_response_data(lines)
+			return self.process_response_data(lines)
 		else:
-			self.process_subgraph(lines)
+			return self.process_subgraph(lines)
 
 
 
@@ -49,22 +48,22 @@ class Sampler():
 			elif i == 3 :
 				ns = int(lines[i])
 			elif i > 3 and i < 4 + ns :
-				nodes.append(self.process_node_data(lines[i], kv))
+				node_data = self.process_node_data(lines[i], kv)
+				if 'id' in node_data:
+					nodes.append(node_data)
 			else:
 				edges.append(lines[i].split())
 
-		print(nodes)
-		print(edges)
-
+		return nodes, edges
 
 	def process_node_data(self, line, node_attr_num):
 		node_dict = dict()
 		entries = line.split()
 		for j in range(len(entries)):
 			if j == 0:
-				node_dict['id'] = entries[j]
+				node_dict['id'] = int(entries[j])
 			elif j == 1:
-				node_dict['degree'] = entries[j]
+				node_dict['degree'] = int(entries[j])
 			elif j >= 2 and (j-2) < node_attr_num :
 				if 'node_attr' not in node_dict:
 					node_dict['node_attr'] = [entries[j]]
@@ -89,10 +88,36 @@ class Sampler():
 					print('the node you queried does not exist')
 					return
 			else :
-				query_node_neighbor.append(self.process_node_data(lines[i], node_attr_num))
+				node_data = self.process_node_data(lines[i], node_attr_num)
+				if 'id' in node_data:
+					query_node_neighbor.append(node_data)
+
+		return query_node, query_node_neighbor
+
+	def maxdegree_sample(self, team):		
+
+		graph = nx.Graph()
+		max_degree_node = 1
+		for i in range(self.node_limit):
+			print(str(i) + ' th query')
+			query_node, query_node_neighbor = self.query_public_graph(team, max_degree_node)
+			graph.add_node(query_node['id'], node_attr=query_node['node_attr'], degree=query_node['degree'])
+
+			max_degree = 0
+			max_degree_node = 1
+			for node in query_node_neighbor:
+				graph.add_node(node['id'], node_attr=node['node_attr'], degree=node['degree'])
+				if node['degree'] > max_degree:
+					max_degree = node['degree']
+					max_degree_node = node['id']
+				if 'edge_attr' in node:
+					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
+				else:
+					graph.add_edge(query_node['id'], node['id'])
+
+		# print(graph.nodes())
+		
 
 
-		print(query_node)
-		print(query_node_neighbor)
 
 
