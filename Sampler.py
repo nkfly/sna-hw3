@@ -6,6 +6,7 @@ import io
 import http.client;
 import networkx as nx
 import numpy as np
+import math
 
 class Sampler():
 	def __init__(self, node_limit):
@@ -38,6 +39,8 @@ class Sampler():
 		nodes = []
 		edges = []
 		for i in range(len(lines)):
+			if lines[i] == '':
+				continue
 			if i == 0:
 				team_id = lines[i]
 			elif i == 1:
@@ -66,9 +69,9 @@ class Sampler():
 				node_dict['degree'] = int(entries[j])
 			elif j >= 2 and (j-2) < node_attr_num :
 				if 'node_attr' not in node_dict:
-					node_dict['node_attr'] = [entries[j]]
+					node_dict['node_attr'] = [int(entries[j])]
 				else:
-					node_dict['node_attr'].append(entries[j])
+					node_dict['node_attr'].append(int(entries[j]))
 			else:
 				node_dict['edge_attr'] = entries[j]
 		return node_dict
@@ -102,6 +105,7 @@ class Sampler():
 			print(str(i) + ' th query')
 			query_node, query_node_neighbor = self.query_public_graph(team, max_degree_node)
 			graph.add_node(query_node['id'], node_attr=query_node['node_attr'], degree=query_node['degree'])
+			print(query_node)
 
 			max_degree = 0
 			max_degree_node = 1
@@ -116,6 +120,78 @@ class Sampler():
 					graph.add_edge(query_node['id'], node['id'])
 
 		# print(graph.nodes())
+	def node_attribute_preserving_sample(self, team):
+		graph = nx.Graph()
+		attr_distribution = [[2 for i in range(1000)], [2 for i in range(1000)], [2 for i in range(1000)], [2 for i in range(1000)], [2 for i in range(1000)]]
+
+		nodes, edges = self.query_public_graph(team, '')
+		for node in nodes:
+			graph.add_node(int(node['id']), node_attr=node['node_attr'], degree=node['degree'])
+			for i in range(len(node['node_attr'])):
+				attr_distribution[i][node['node_attr'][i]] = attr_distribution[i][node['node_attr'][i]] + 1
+		for edge in edges:
+			graph.add_edge(int(edge[0]), int(edge[1]))
+
+		queried_set = set()
+
+		for i in range(self.node_limit):
+			print(str(i) + ' th query')
+			highest_importance = 0
+			node_attr_dict = nx.get_node_attributes(graph, 'node_attr')
+			degree_dict = nx.get_node_attributes(graph, 'degree')
+			for n in graph.nodes():
+				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)])
+
+				if graph.node[n]['importance'] > highest_importance and n not in queried_set:
+					highest_importance = graph.node[n]['importance']
+					most_important_node = n
+
+			queried_set.add(most_important_node)
+			print(str(highest_importance)+'\t'+str(most_important_node))
+
+			query_node, query_node_neighbor = self.query_public_graph(team, most_important_node)
+			graph.add_node(query_node['id'], node_attr=query_node['node_attr'], degree=query_node['degree'])
+			for node in query_node_neighbor:
+				graph.add_node(node['id'], node_attr=node['node_attr'], degree=node['degree'])
+
+				for j in range(len(node['node_attr'])):
+					attr_distribution[j][node['node_attr'][j]] = attr_distribution[j][node['node_attr'][j]] + 1
+
+
+				if 'edge_attr' in node:
+					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
+				else:
+					graph.add_edge(query_node['id'], node['id'])
+			
+
+	def cal_degree_multiply_delta_kldivergence(self, attr_distribution, node_attr, degree):
+		kldivergence = 0
+		for i in range(len(attr_distribution)):
+			# copy_attr_distribution = list(attr_distribution[i])
+			# copy_attr_distribution[node_attr[i]] = copy_attr_distribution[node_attr[i]] -1
+
+			# probability_denominator = sum(attr_distribution[i])
+			# for j in range(len(attr_distribution[i])):
+			# 	kldivergence = kldivergence +  math.log((attr_distribution[i][j]/probability_denominator)/(copy_attr_distribution[j]/(probability_denominator-1)))
+			# 	kldivergence = kldivergence +  math.log((copy_attr_distribution[j]/(probability_denominator-1))/(attr_distribution[i][j]/probability_denominator))
+
+			kldivergence = kldivergence + math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
+			kldivergence = kldivergence + math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
+		return degree*kldivergence;
+
+
+		
+
+
+			
+		
+
+
+
+			
+
+
+
 		
 
 
