@@ -122,7 +122,7 @@ class Sampler():
 		# print(graph.nodes())
 	def node_attribute_preserving_sample(self, team):
 		graph = nx.Graph()
-		attr_distribution = [[2 for i in range(1000)], [2 for i in range(1000)], [2 for i in range(1000)], [2 for i in range(1000)], [2 for i in range(1000)]]
+		attr_distribution = [[2 for i in range(2)], [2 for i in range(2)], [2 for i in range(10)], [2 for i in range(7)], [2 for i in range(113)]]
 
 		nodes, edges = self.query_public_graph(team, '')
 		for node in nodes:
@@ -162,6 +162,7 @@ class Sampler():
 					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
 				else:
 					graph.add_edge(query_node['id'], node['id'])
+		return self.normalize_attr_distribution(attr_distribution)
 			
 
 	def cal_degree_multiply_delta_kldivergence(self, attr_distribution, node_attr, degree):
@@ -175,9 +176,59 @@ class Sampler():
 			# 	kldivergence = kldivergence +  math.log((attr_distribution[i][j]/probability_denominator)/(copy_attr_distribution[j]/(probability_denominator-1)))
 			# 	kldivergence = kldivergence +  math.log((copy_attr_distribution[j]/(probability_denominator-1))/(attr_distribution[i][j]/probability_denominator))
 
-			kldivergence = kldivergence + math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
-			kldivergence = kldivergence + math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
+			kldivergence = kldivergence + attr_distribution[i][node_attr[i]]*math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
+			kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
 		return degree*kldivergence;
+
+
+	def find_attribute_range(self, filename):
+		attr_distribution = [[10000,0],[10000,0],[10000,0],[10000,0],[10000,0]]
+		with open(filename, 'r') as f:
+			for line in f:
+				entries = line.strip().split(',')[1:]
+				for i in range(len(entries)):
+					if int(entries[i]) > attr_distribution[i][1]:
+						attr_distribution[i][1] = int(entries[i])
+					if int(entries[i]) < attr_distribution[i][0]:
+						attr_distribution[i][0] = int(entries[i])
+		print(attr_distribution)
+
+	def find_attribute_distribution(self, filename):
+		attr_distribution = [[0 for i in range(2)], [0 for i in range(2)], [0 for i in range(10)], [0 for i in range(7)], [0 for i in range(113)]]
+		with open(filename, 'r') as f:
+			for line in f:
+				entries = line.strip().split(',')[1:]
+				for i in range(len(entries)):
+					attr_distribution[i][int(entries[i])] = attr_distribution[i][int(entries[i])] + 1
+		
+		
+
+		return self.normalize_attr_distribution(attr_distribution)		
+
+	def normalize_attr_distribution(self, attr_distribution):
+		for distribution in attr_distribution:
+			denominator = sum(distribution)
+			for i in range(len(distribution)):
+				distribution[i] = distribution[i]/denominator
+
+		return attr_distribution
+
+	def kldivergence(self, true_attr_distribution, sample_attr_distribution):
+		kldivergence = 0
+		for i in range(len(true_attr_distribution)):
+			for j in range(len(true_attr_distribution[i])):
+				if true_attr_distribution[i][j] > 0 and sample_attr_distribution[i][j] > 0:
+					kldivergence = kldivergence +  true_attr_distribution[i][j]*math.log((true_attr_distribution[i][j])/(sample_attr_distribution[i][j]))
+					kldivergence = kldivergence +  sample_attr_distribution[i][j]*math.log((sample_attr_distribution[i][j])/(true_attr_distribution[i][j]))
+		return kldivergence/2
+
+
+
+
+
+
+
+
 
 
 		
