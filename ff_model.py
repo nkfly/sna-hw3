@@ -2,6 +2,28 @@ import Sampler
 import networkx as nx
 import numpy as np
 
+filename="public_edges.txt"
+def create_graph_from_file(filename):
+	#open the file
+	try:
+		fd = open(filename,"r")
+	except:
+		print("Can't open the file"+filename)
+	graph = nx.Graph()
+	content=fd.readlines()
+	for a in content:
+		nodes=a.split(',')
+		first=int(nodes[0])
+		second=int(nodes[1])
+		graph.add_edge(first,second)
+	#	print("The Undirected Graph here has "+str(uGraph.number_of_edges())+" edges and "+str(uGraph.number_of_nodes())+" vertex")
+	#close the file
+	try:
+		fd.close();
+	except: 
+		pass
+	return graph
+
 def create_first_graph(password,sampler):
 	nodes,others=sampler.query_public_graph(team,"")
 	mygraph=nx.Graph()
@@ -41,9 +63,9 @@ def forest_fire_sample(graph,list,pf,count,limit,password,sampler):
 			if sample_degree != true_degree:
 				list.append(neighbor['id'])
 				w=w-1
-		'''check="point "+str(point)+",length "+str(len(list))+", w="+str(tmpw)+","+str(graph.number_of_nodes())+" nodes, Query "+str(count)
-		f.write(check)
-		print(check)'''
+		check="point "+str(point)+",length "+str(len(list))+", w="+str(tmpw)+","+str(graph.number_of_nodes())+" nodes, Query "+str(count)
+		#f.write(check)
+		print(check)
 		
 def get_graph_degree_destribution(graph):
 	degs={}
@@ -58,6 +80,59 @@ def get_graph_degree_destribution(graph):
 	
 	return degs
 
+def get_distribution(filename):
+	#open the file
+	try:
+		fd = open(filename,"r")
+	except:
+		print("Can't open the file"+filename)
+	content=fd.readlines()
+	degree_distribution = [1 for i in range(15)]
+	for a in content:
+		nodes=a.split(' ')
+		degree=int(nodes[0])
+		total=int(nodes[1])
+		if degree == 1:
+				degree_distribution[0] = degree_distribution[0] + total
+		elif degree == 2:
+			degree_distribution[1] = degree_distribution[1] + total
+		elif degree == 3:
+			degree_distribution[2] = degree_distribution[2] + total
+		elif degree <= 6:
+			degree_distribution[3] = degree_distribution[3] + total
+		elif degree <= 10:
+			degree_distribution[4] = degree_distribution[4] + total
+		elif degree <= 15:
+			degree_distribution[5] = degree_distribution[5] + total
+		elif degree <= 21:
+			degree_distribution[6] = degree_distribution[6] + total
+		elif degree <= 28:
+			degree_distribution[7] = degree_distribution[7] + total
+		elif degree <= 36:
+			degree_distribution[8] = degree_distribution[8] + total
+		elif degree <= 45:
+			degree_distribution[9] = degree_distribution[9] + total
+		elif degree <= 55:
+			degree_distribution[10] = degree_distribution[10] + total
+		elif degree <= 70:
+			degree_distribution[11] = degree_distribution[11] + total
+		elif degree <= 100:
+			degree_distribution[12] = degree_distribution[12] + total
+		elif degree <= 200:
+			degree_distribution[13] = degree_distribution[13] + total
+		else :
+			degree_distribution[14] = degree_distribution[14] + total
+	denominator = sum(degree_distribution)
+	for i in range(len(degree_distribution)):
+		degree_distribution[i] = degree_distribution[i]/denominator
+	#	print("The Undirected Graph here has "+str(uGraph.number_of_edges())+" edges and "+str(uGraph.number_of_nodes())+" vertex")
+	#close the file
+	try:
+		fd.close();
+	except: 
+		pass
+	return degree_distribution	
+	
 def get_graph_degree_prob_distribution(graph,distribution=None):
 		degs={}
 		if distribution==None:
@@ -80,6 +155,13 @@ if __name__ == "__main__":
 	burning_list=list()
 	burning_list.append(first_seed)
 	forest_fire_sample(mygraph,burning_list,probability,query_time,node_limit,team,sampler)
-	degree_distribution= get_graph_degree_destribution(mygraph)
-	prob_distribution= get_graph_degree_prob_distribution(mygraph,degree_distribution)
+	mydegree=sampler.cal_degree_distribution(mygraph)
+	for x in range(0,5):
+		mydegree[x]=mydegree[x]*10
+	for x in range(9,14):
+		mydegree[x]=mydegree[x]/10
+	truedegree=get_distribution("output.txt")
+	print(str(sampler.kldivergence(truedegree,mydegree)))
+	'''degree_distribution= get_graph_degree_destribution(mygraph)
+	prob_distribution= get_graph_degree_prob_distribution(mygraph,degree_distribution)'''
 	
