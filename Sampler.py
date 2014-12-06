@@ -149,14 +149,19 @@ class Sampler():
 			degree_dict = nx.get_node_attributes(graph, 'degree')
 
 
+			# importance_list = []
+			degree_distribution = self.cal_degree_distribution(graph, True)
 			for node in query_node_neighbor:
 				n = node['id']
-				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)])
+				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)], degree_distribution)
+				# importance_list.append(graph.node[n]['importance'])
 
 				if graph.node[n]['importance'] > highest_importance and n not in queried_set:
 					highest_importance = graph.node[n]['importance']
 					most_important_node = n
 
+			# importance_list.sort()
+			# print(importance_list)
 			queried_set.add(most_important_node)
 			print(str(highest_importance)+'\t'+str(most_important_node))
 
@@ -173,11 +178,12 @@ class Sampler():
 					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
 				else:
 					graph.add_edge(query_node['id'], node['id'])
-		return self.cal_degree_distribution(graph), self.normalize_attr_distribution(attr_distribution)
+		return self.cal_degree_distribution(graph, True), self.normalize_attr_distribution(attr_distribution)
 			
 
-	def cal_degree_multiply_delta_kldivergence(self, attr_distribution, node_attr, degree):
+	def cal_degree_multiply_delta_kldivergence(self, attr_distribution, node_attr, degree, degree_distribution):
 		kldivergence = 0
+		bin = self.which_bin(degree)
 		for i in range(len(attr_distribution)):
 			# copy_attr_distribution = list(attr_distribution[i])
 			# copy_attr_distribution[node_attr[i]] = copy_attr_distribution[node_attr[i]] -1
@@ -189,7 +195,11 @@ class Sampler():
 
 			kldivergence = kldivergence + attr_distribution[i][node_attr[i]]*math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
 			kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
-		return degree*kldivergence;
+
+			# kldivergence = kldivergence + degree_distribution[bin]*math.log(degree_distribution[bin]/(degree_distribution[bin]-1))
+			# kldivergence = kldivergence + (degree_distribution[bin]-1)*math.log((degree_distribution[bin]-1)/(degree_distribution[bin]))
+
+		return degree*kldivergence
 	def create_public_graph(self, node_file, edge_file):
 		graph = nx.Graph()
 		with open(node_file, 'r') as f:
@@ -242,45 +252,52 @@ class Sampler():
 				kldivergence = kldivergence +  true_attr_distribution[i]*math.log((true_attr_distribution[i])/(sample_attr_distribution[i]))
 				kldivergence = kldivergence +  sample_attr_distribution[i]*math.log((sample_attr_distribution[i])/(true_attr_distribution[i]))
 		return kldivergence/2
-	def cal_degree_distribution(self, graph):
+	def which_bin(self, degree):
+		if degree == 1:
+			return 0
+		elif degree == 2:
+			return 1
+		elif degree == 3:
+			return 2
+		elif degree <= 6:
+			return 3
+		elif degree <= 10:
+			return 4
+		elif degree <= 15:
+			return 5
+		elif degree <= 21:
+			return 6
+		elif degree <= 28:
+			return 7
+		elif degree <= 36:
+			return 8
+		elif degree <= 45:
+			return 9
+		elif degree <= 55:
+			return 10
+		elif degree <= 70:
+			return 11
+		elif degree <= 100:
+			return 12
+		elif degree <= 200:
+			return 13
+		else :
+			return 14
+
+	def cal_degree_distribution(self, graph, is_normalize):
 		degree_dict = nx.get_node_attributes(graph, 'degree')
 		degree_distribution = [1 for i in range(15)]
 		for n in graph.nodes():
 			degree = int(degree_dict[n])
-			if degree == 1:
-				degree_distribution[0] = degree_distribution[0] + 1
-			elif degree == 2:
-				degree_distribution[1] = degree_distribution[1] + 1
-			elif degree == 3:
-				degree_distribution[2] = degree_distribution[2] + 1
-			elif degree <= 6:
-				degree_distribution[3] = degree_distribution[3] + 1
-			elif degree <= 10:
-				degree_distribution[4] = degree_distribution[4] + 1
-			elif degree <= 15:
-				degree_distribution[5] = degree_distribution[5] + 1
-			elif degree <= 21:
-				degree_distribution[6] = degree_distribution[6] + 1
-			elif degree <= 28:
-				degree_distribution[7] = degree_distribution[7] + 1
-			elif degree <= 36:
-				degree_distribution[8] = degree_distribution[8] + 1
-			elif degree <= 45:
-				degree_distribution[9] = degree_distribution[9] + 1
-			elif degree <= 55:
-				degree_distribution[10] = degree_distribution[10] + 1
-			elif degree <= 70:
-				degree_distribution[11] = degree_distribution[11] + 1
-			elif degree <= 100:
-				degree_distribution[12] = degree_distribution[12] + 1
-			elif degree <= 200:
-				degree_distribution[13] = degree_distribution[13] + 1
-			else :
-				degree_distribution[14] = degree_distribution[14] + 1
-		denominator = sum(degree_distribution)
-		for i in range(len(degree_distribution)):
-			degree_distribution[i] = degree_distribution[i]/denominator
+			bin = self.which_bin(degree)
+			degree_distribution[bin] = degree_distribution[bin] + 1
+			
+		if is_normalize:
+			denominator = sum(degree_distribution)
+			for i in range(len(degree_distribution)):
+				degree_distribution[i] = degree_distribution[i]/denominator
 		return degree_distribution
+		
 
 
 

@@ -15,10 +15,11 @@ if __name__ == "__main__":
 	# sampler.find_attribute_distribution('public_nodes.txt')
 	true_attr_distribution = sampler.find_attribute_distribution('public_nodes.txt')
 	sample_degree_distribution, sample_attr_distribution = sampler.node_attribute_preserving_sample(team)
-	public_degree_distribution = sampler.cal_degree_distribution(public_graph)
+	public_degree_distribution = sampler.cal_degree_distribution(public_graph, True)
 
 	# print(public_degree_distribution)
 	print(sample_degree_distribution)
+	# sample_degree_distribution.reverse()
 	print(sampler.kldivergence(public_degree_distribution, sample_degree_distribution))
 
 	for i in range(len(true_attr_distribution)):
