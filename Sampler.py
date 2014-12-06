@@ -162,7 +162,7 @@ class Sampler():
 					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
 				else:
 					graph.add_edge(query_node['id'], node['id'])
-		return self.normalize_attr_distribution(attr_distribution)
+		return self.cal_degree_distribution(graph), self.normalize_attr_distribution(attr_distribution)
 			
 
 	def cal_degree_multiply_delta_kldivergence(self, attr_distribution, node_attr, degree):
@@ -179,6 +179,19 @@ class Sampler():
 			kldivergence = kldivergence + attr_distribution[i][node_attr[i]]*math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
 			kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
 		return degree*kldivergence;
+	def create_public_graph(self, node_file, edge_file):
+		graph = nx.Graph()
+		with open(node_file, 'r') as f:
+			for line in f:
+				entries = line.strip().split(',')
+				graph.add_node(int(entries[0]), node_attr=entries[1:], degree=0)
+		with open(edge_file, 'r') as f:
+			for line in f:
+				entries = line.strip().split(',')
+				graph.node[int(entries[0])]['degree'] = graph.node[int(entries[0])]['degree'] + 1
+				graph.node[int(entries[1])]['degree'] = graph.node[int(entries[1])]['degree'] + 1
+		return graph
+
 
 
 	def find_attribute_range(self, filename):
@@ -201,8 +214,6 @@ class Sampler():
 				for i in range(len(entries)):
 					attr_distribution[i][int(entries[i])] = attr_distribution[i][int(entries[i])] + 1
 		
-		
-
 		return self.normalize_attr_distribution(attr_distribution)		
 
 	def normalize_attr_distribution(self, attr_distribution):
@@ -216,11 +227,56 @@ class Sampler():
 	def kldivergence(self, true_attr_distribution, sample_attr_distribution):
 		kldivergence = 0
 		for i in range(len(true_attr_distribution)):
-			for j in range(len(true_attr_distribution[i])):
-				if true_attr_distribution[i][j] > 0 and sample_attr_distribution[i][j] > 0:
-					kldivergence = kldivergence +  true_attr_distribution[i][j]*math.log((true_attr_distribution[i][j])/(sample_attr_distribution[i][j]))
-					kldivergence = kldivergence +  sample_attr_distribution[i][j]*math.log((sample_attr_distribution[i][j])/(true_attr_distribution[i][j]))
+			if true_attr_distribution[i] > 0 and sample_attr_distribution[i] > 0:
+				kldivergence = kldivergence +  true_attr_distribution[i]*math.log((true_attr_distribution[i])/(sample_attr_distribution[i]))
+				kldivergence = kldivergence +  sample_attr_distribution[i]*math.log((sample_attr_distribution[i])/(true_attr_distribution[i]))
 		return kldivergence/2
+	def cal_degree_distribution(self, graph):
+		degree_dict = nx.get_node_attributes(graph, 'degree')
+		degree_distribution = [1 for i in range(15)]
+		for n in graph.nodes():
+			degree = int(degree_dict[n])
+			if degree == 1:
+				degree_distribution[0] = degree_distribution[0] + 1
+			elif degree == 2:
+				degree_distribution[1] = degree_distribution[1] + 1
+			elif degree == 3:
+				degree_distribution[2] = degree_distribution[2] + 1
+			elif degree <= 6:
+				degree_distribution[3] = degree_distribution[3] + 1
+			elif degree <= 10:
+				degree_distribution[4] = degree_distribution[4] + 1
+			elif degree <= 15:
+				degree_distribution[5] = degree_distribution[5] + 1
+			elif degree <= 21:
+				degree_distribution[6] = degree_distribution[6] + 1
+			elif degree <= 28:
+				degree_distribution[7] = degree_distribution[7] + 1
+			elif degree <= 36:
+				degree_distribution[8] = degree_distribution[8] + 1
+			elif degree <= 45:
+				degree_distribution[9] = degree_distribution[9] + 1
+			elif degree <= 55:
+				degree_distribution[10] = degree_distribution[10] + 1
+			elif degree <= 70:
+				degree_distribution[11] = degree_distribution[11] + 1
+			elif degree <= 100:
+				degree_distribution[12] = degree_distribution[12] + 1
+			elif degree <= 200:
+				degree_distribution[13] = degree_distribution[13] + 1
+			else :
+				degree_distribution[14] = degree_distribution[14] + 1
+		denominator = sum(degree_distribution)
+		for i in range(len(degree_distribution)):
+			degree_distribution[i] = degree_distribution[i]/denominator
+		return degree_distribution
+
+
+
+
+
+
+
 
 
 
