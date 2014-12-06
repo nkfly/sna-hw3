@@ -143,7 +143,7 @@ def get_graph_degree_prob_distribution(graph,distribution=None):
 		return degs
 
 if __name__ == "__main__":
-	team = "s5PMHD50Tb";
+	team = "aaaaa";
 	node_limit = 1000
 	query_time = 0
 	probability=0.25
