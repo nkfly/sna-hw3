@@ -120,6 +120,13 @@ class Sampler():
 					graph.add_edge(query_node['id'], node['id'])
 
 		# print(graph.nodes())
+	def average_degree(self, graph):
+		node_num = 0
+		sum_degree = 0
+		for n in graph.nodes():
+			node_num = node_num + 1
+			sum_degree = sum_degree + graph.node[n]['degree']
+		return sum_degree/node_num
 	def node_attribute_preserving_sample(self, team):
 		graph = nx.Graph()
 		attr_distribution = [[2 for i in range(2)], [2 for i in range(2)], [2 for i in range(10)], [2 for i in range(7)], [2 for i in range(113)]]
@@ -133,13 +140,17 @@ class Sampler():
 			graph.add_edge(int(edge[0]), int(edge[1]))
 
 		queried_set = set()
+		query_node_neighbor = [{'id' : node} for node in graph.nodes()]
 
 		for i in range(self.node_limit):
 			print(str(i) + ' th query')
 			highest_importance = 0
 			node_attr_dict = nx.get_node_attributes(graph, 'node_attr')
 			degree_dict = nx.get_node_attributes(graph, 'degree')
-			for n in graph.nodes():
+
+
+			for node in query_node_neighbor:
+				n = node['id']
 				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)])
 
 				if graph.node[n]['importance'] > highest_importance and n not in queried_set:
