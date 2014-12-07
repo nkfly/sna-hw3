@@ -178,7 +178,7 @@ class Sampler():
 					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
 				else:
 					graph.add_edge(query_node['id'], node['id'])
-		return self.cal_degree_distribution(graph, True), self.normalize_attr_distribution(attr_distribution)
+		return graph,self.cal_degree_distribution(graph, True), self.normalize_attr_distribution(attr_distribution)
 			
 
 	def cal_degree_multiply_delta_kldivergence(self, attr_distribution, node_attr, degree, degree_distribution):
@@ -299,9 +299,42 @@ class Sampler():
 		return degree_distribution
 		
 
+	def get_100_highest_closeness(self,graph):
+		degree_dict = nx.get_node_attributes(graph, 'degree')
+		maxkey=sorted(degree_dict,key=degree_dict.get,reverse=True)
+		outlist=list()
+		for x in range(100):
+			outlist.append(int(maxkey[x]))
+		return outlist
 
-
-
+	def atr(self,inlist): #average true rank evaluation metrice,need the file closeness.txt to work
+		filename='public_closeness.txt'
+		try:
+			fd = open(filename,"r")
+		except:
+			print("Can't open the file "+filename)
+		rank=0.0
+		index=1.0
+		answer={}
+		content=fd.readlines()
+		for a in content:
+			nodes=a.split('	')
+			node=int(nodes[0])
+			answer[node]=index
+			index+=1.0
+		for node in inlist:
+			try:
+				tmpr=answer[node]
+				rank=rank+tmpr
+			except:
+				pass
+		rank=rank/len(inlist)
+		try:
+			fd.close()
+		except: 
+			pass
+		print(rank)
+		return rank
 
 
 
