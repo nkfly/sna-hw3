@@ -1,2 +1,4 @@
 public_edges.txt
 public_nodes.txt
+record.gpickle
+*.txt

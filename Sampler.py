@@ -153,7 +153,7 @@ class Sampler():
 			degree_distribution = self.cal_degree_distribution(graph, True)
 			for node in query_node_neighbor:
 				n = node['id']
-				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)], degree_distribution)
+				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(graph,int(n),attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)], degree_distribution)
 				# importance_list.append(graph.node[n]['importance'])
 
 				if graph.node[n]['importance'] > highest_importance and n not in queried_set:
@@ -181,7 +181,7 @@ class Sampler():
 		return graph,self.cal_degree_distribution(graph, True), self.normalize_attr_distribution(attr_distribution)
 			
 
-	def cal_degree_multiply_delta_kldivergence(self, attr_distribution, node_attr, degree, degree_distribution):
+	def cal_degree_multiply_delta_kldivergence(self,graph,node_id,attr_distribution, node_attr, degree, degree_distribution):
 		kldivergence = 0
 		bin = self.which_bin(degree)
 		for i in range(len(attr_distribution)):
@@ -199,7 +199,8 @@ class Sampler():
 			# kldivergence = kldivergence + degree_distribution[bin]*math.log(degree_distribution[bin]/(degree_distribution[bin]-1))
 			# kldivergence = kldivergence + (degree_distribution[bin]-1)*math.log((degree_distribution[bin]-1)/(degree_distribution[bin]))
 
-		return degree*kldivergence
+		return (degree-graph.degree(node_id))*kldivergence
+		#return (degree)*kldivergence
 	def create_public_graph(self, node_file, edge_file):
 		graph = nx.Graph()
 		with open(node_file, 'r') as f:
