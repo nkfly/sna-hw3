@@ -13,7 +13,7 @@ class Sampler():
 		self.node_limit = node_limit		
 
 	def query_public_graph(self, team, node):
-		url= "/SNA2014/hw3/query.php?team=" + team
+		url= "/SNA2014/hw3/query_public.php?team=" + team
 		if str(node) != "":
 			url += "&node=" + str(node);
 		connection = http.client.HTTPConnection("140.112.31.186", 80);
