@@ -10,7 +10,9 @@ import math
 
 class Sampler():
 	def __init__(self, node_limit):
-		self.node_limit = node_limit		
+		self.node_limit = node_limit
+
+
 
 	def query_public_graph(self, team, node):
 		url= "/SNA2014/hw3/query_public.php?team=" + team
@@ -45,6 +47,7 @@ class Sampler():
 				team_id = lines[i]
 			elif i == 1:
 				i_th_query = lines[i]
+				print('query times from server : ' + str(i_th_query))
 			elif i == 2:
 				kv = int(lines[i].split()[0])
 				ke = int(lines[i].split()[1])
@@ -76,6 +79,64 @@ class Sampler():
 				node_dict['edge_attr'] = entries[j]
 		return node_dict
 
+	def node_attribute_preserving_sample(self, team, graph, time, queried_set, candidate_list):
+		
+		attr_distribution = [[2 for i in range(2)], [2 for i in range(2)], [2 for i in range(10)], [2 for i in range(7)], [2 for i in range(113)]]
+
+		if len(candidate_list) == 0:
+			nodes, edges = self.query_public_graph(team, '')
+			for node in nodes:
+				graph.add_node(int(node['id']), node_attr=node['node_attr'], degree=node['degree'])
+				for i in range(len(node['node_attr'])):
+					attr_distribution[i][node['node_attr'][i]] = attr_distribution[i][node['node_attr'][i]] + 1
+			for edge in edges:
+				graph.add_edge(int(edge[0]), int(edge[1]))
+
+			query_node_neighbor = [{'id' : node} for node in graph.nodes()]
+		else:
+			query_node_neighbor = [{'id' : node} for node in candidate_list]
+
+
+
+
+		for i in range(self.node_limit):
+			print(str(i) + ' th query')
+			highest_importance = 0
+			node_attr_dict = nx.get_node_attributes(graph, 'node_attr')
+			degree_dict = nx.get_node_attributes(graph, 'degree')
+
+
+			degree_distribution = self.cal_degree_distribution(graph, True)
+			for node in query_node_neighbor:
+				n = node['id']
+				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(graph,int(n),attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)], degree_distribution)
+
+				if graph.node[n]['importance'] > highest_importance and n not in queried_set:
+					highest_importance = graph.node[n]['importance']
+					most_important_node = n
+
+			queried_set.add(most_important_node)
+			print(str(highest_importance)+'\t'+str(most_important_node))
+
+			query_node, query_node_neighbor = self.query_public_graph(team, most_important_node)
+			graph.add_node(query_node['id'], node_attr=query_node['node_attr'], degree=query_node['degree'])
+			for node in query_node_neighbor:
+				graph.add_node(node['id'], node_attr=node['node_attr'], degree=node['degree'])
+
+				for j in range(len(node['node_attr'])):
+					attr_distribution[j][node['node_attr'][j]] = attr_distribution[j][node['node_attr'][j]] + 1
+
+
+				if 'edge_attr' in node:
+					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
+				else:
+					graph.add_edge(query_node['id'], node['id'])
+
+		candidate_list = []
+		for qnn in query_node_neighbor:
+			candidate_list.append(qnn['id'])
+		return graph,time+self.node_limit, queried_set, candidate_list, self.cal_degree_distribution(graph, True), self.normalize_attr_distribution(attr_distribution)
+
 
 	def process_response_data(self, lines):
 		query_node_neighbor = []
@@ -84,6 +145,7 @@ class Sampler():
 				team_id = lines[i]
 			elif i == 1:
 				i_th_query = lines[i]
+				print('query times from server : ' + str(i_th_query))
 			elif i == 2:
 				query_node = self.process_node_data(lines[i], 2147483647)
 				node_attr_num = len(query_node['node_attr'])
@@ -127,58 +189,6 @@ class Sampler():
 			node_num = node_num + 1
 			sum_degree = sum_degree + graph.node[n]['degree']
 		return sum_degree/node_num
-	def node_attribute_preserving_sample(self, team):
-		graph = nx.Graph()
-		attr_distribution = [[2 for i in range(2)], [2 for i in range(2)], [2 for i in range(10)], [2 for i in range(7)], [2 for i in range(113)]]
-
-		nodes, edges = self.query_public_graph(team, '')
-		for node in nodes:
-			graph.add_node(int(node['id']), node_attr=node['node_attr'], degree=node['degree'])
-			for i in range(len(node['node_attr'])):
-				attr_distribution[i][node['node_attr'][i]] = attr_distribution[i][node['node_attr'][i]] + 1
-		for edge in edges:
-			graph.add_edge(int(edge[0]), int(edge[1]))
-
-		queried_set = set()
-		query_node_neighbor = [{'id' : node} for node in graph.nodes()]
-
-		for i in range(self.node_limit):
-			print(str(i) + ' th query')
-			highest_importance = 0
-			node_attr_dict = nx.get_node_attributes(graph, 'node_attr')
-			degree_dict = nx.get_node_attributes(graph, 'degree')
-
-
-			# importance_list = []
-			degree_distribution = self.cal_degree_distribution(graph, True)
-			for node in query_node_neighbor:
-				n = node['id']
-				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(graph,int(n),attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)], degree_distribution)
-				# importance_list.append(graph.node[n]['importance'])
-
-				if graph.node[n]['importance'] > highest_importance and n not in queried_set:
-					highest_importance = graph.node[n]['importance']
-					most_important_node = n
-
-			# importance_list.sort()
-			# print(importance_list)
-			queried_set.add(most_important_node)
-			print(str(highest_importance)+'\t'+str(most_important_node))
-
-			query_node, query_node_neighbor = self.query_public_graph(team, most_important_node)
-			graph.add_node(query_node['id'], node_attr=query_node['node_attr'], degree=query_node['degree'])
-			for node in query_node_neighbor:
-				graph.add_node(node['id'], node_attr=node['node_attr'], degree=node['degree'])
-
-				for j in range(len(node['node_attr'])):
-					attr_distribution[j][node['node_attr'][j]] = attr_distribution[j][node['node_attr'][j]] + 1
-
-
-				if 'edge_attr' in node:
-					graph.add_edge(query_node['id'], node['id'], edge_attr=node['edge_attr'])
-				else:
-					graph.add_edge(query_node['id'], node['id'])
-		return graph,self.cal_degree_distribution(graph, True), self.normalize_attr_distribution(attr_distribution)
 			
 
 	def cal_degree_multiply_delta_kldivergence(self,graph,node_id,attr_distribution, node_attr, degree, degree_distribution):
