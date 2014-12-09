@@ -15,7 +15,7 @@ class Sampler():
 
 
 	def query_public_graph(self, team, node):
-		url= "/SNA2014/hw3/query_public.php?team=" + team
+		url= "/SNA2014/hw3/query.php?team=" + team
 		if str(node) != "":
 			url += "&node=" + str(node);
 		connection = http.client.HTTPConnection("140.112.31.186", 80);
@@ -81,7 +81,7 @@ class Sampler():
 
 	def node_attribute_preserving_sample(self, team, graph, time, queried_set, candidate_list):
 		
-		attr_distribution = [[2 for i in range(2)], [2 for i in range(2)], [2 for i in range(10)], [2 for i in range(7)], [2 for i in range(113)]]
+		attr_distribution = [[2 for i in range(1534)], [2 for i in range(2)], [2 for i in range(384)], [2 for i in range(3)]]
 
 		if len(candidate_list) == 0:
 			nodes, edges = self.query_public_graph(team, '')
@@ -239,7 +239,7 @@ class Sampler():
 		print(attr_distribution)
 
 	def find_attribute_distribution(self, filename):
-		attr_distribution = [[0 for i in range(2)], [0 for i in range(2)], [0 for i in range(10)], [0 for i in range(7)], [0 for i in range(113)]]
+		attr_distribution = [[0 for i in range(1534)], [0 for i in range(2)], [0 for i in range(384)], [0 for i in range(3)]]
 		with open(filename, 'r') as f:
 			for line in f:
 				entries = line.strip().split(',')[1:]
