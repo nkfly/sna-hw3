@@ -79,7 +79,7 @@ class Sampler():
 				node_dict['edge_attr'] = entries[j]
 		return node_dict
 
-	def node_attribute_preserving_sample(self, team, graph, time, queried_set, candidate_list):
+	def node_attribute_preserving_sample(self, team, graph, time, queried_set, candidate_list, type):
 		
 		attr_distribution = [[2 for i in range(1534)], [2 for i in range(2)], [2 for i in range(384)], [2 for i in range(3)]]
 
@@ -109,7 +109,7 @@ class Sampler():
 			degree_distribution = self.cal_degree_distribution(graph, True)
 			for node in query_node_neighbor:
 				n = node['id']
-				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(graph,int(n),attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)], degree_distribution)
+				graph.node[n]['importance'] = self.cal_degree_multiply_delta_kldivergence(graph,int(n),attr_distribution, node_attr_dict[int(n)], degree_dict[int(n)], degree_distribution, type)
 
 				if graph.node[n]['importance'] > highest_importance and n not in queried_set:
 					highest_importance = graph.node[n]['importance']
@@ -191,7 +191,7 @@ class Sampler():
 		return sum_degree/node_num
 			
 
-	def cal_degree_multiply_delta_kldivergence(self,graph,node_id,attr_distribution, node_attr, degree, degree_distribution):
+	def cal_degree_multiply_delta_kldivergence(self,graph,node_id,attr_distribution, node_attr, degree, degree_distribution, type):
 		kldivergence = 0
 		bin = self.which_bin(degree)
 		for i in range(len(attr_distribution)):
@@ -202,14 +202,21 @@ class Sampler():
 			# for j in range(len(attr_distribution[i])):
 			# 	kldivergence = kldivergence +  math.log((attr_distribution[i][j]/probability_denominator)/(copy_attr_distribution[j]/(probability_denominator-1)))
 			# 	kldivergence = kldivergence +  math.log((copy_attr_distribution[j]/(probability_denominator-1))/(attr_distribution[i][j]/probability_denominator))
-			if i == 0 or i == 2:
+			if type == 1:
 				kldivergence = kldivergence + attr_distribution[i][node_attr[i]]*math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
-				kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
+				kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[
+			else:
+				if i == 0 or i == 2:
+					kldivergence = kldivergence + attr_distribution[i][node_attr[i]]*math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
+					kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
 
 			# kldivergence = kldivergence + degree_distribution[bin]*math.log(degree_distribution[bin]/(degree_distribution[bin]-1))
 			# kldivergence = kldivergence + (degree_distribution[bin]-1)*math.log((degree_distribution[bin]-1)/(degree_distribution[bin]))
-
-		return (degree-graph.degree(node_id))
+		if type <= 2:
+			return (degree-graph.degree(node_id)) * kldivergence
+		else:
+			return (degree-graph.degree(node_id))
+		
 		#return (degree)*kldivergence
 	def create_public_graph(self, node_file, edge_file):
 		graph = nx.Graph()
