@@ -5,7 +5,7 @@ import output
 
 if __name__ == "__main__":
 	team = sys.argv[1];
-	node_limit = sys.argv[2];
+	node_limit = int(sys.argv[2]);
 	#node_limit = 300
 	sampler = Sampler.Sampler(node_limit*3/100)
 
