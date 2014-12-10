@@ -5,7 +5,7 @@ import recorder
 if __name__ == "__main__":
 	team = sys.argv[1];
 
-	node_limit = 3
+	node_limit = 50
 	sampler = Sampler.Sampler(node_limit)
 
 	# public_graph = sampler.create_public_graph('public_nodes.txt', 'public_edges.txt')
@@ -28,8 +28,8 @@ if __name__ == "__main__":
 	#print(sample_degree_distribution)
 	# print(sampler.kldivergence(public_degree_distribution, sample_degree_distribution))
 
-	for i in range(len(sample_attr_distribution)):
+	#for i in range(len(sample_attr_distribution)):
 		# print(sampler.kldivergence(true_attr_distribution[i], sample_attr_distribution[i]))
-		print(sample_attr_distribution[i])
+		#print(sample_attr_distribution[i])
 
 

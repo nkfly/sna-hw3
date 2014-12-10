@@ -202,14 +202,14 @@ class Sampler():
 			# for j in range(len(attr_distribution[i])):
 			# 	kldivergence = kldivergence +  math.log((attr_distribution[i][j]/probability_denominator)/(copy_attr_distribution[j]/(probability_denominator-1)))
 			# 	kldivergence = kldivergence +  math.log((copy_attr_distribution[j]/(probability_denominator-1))/(attr_distribution[i][j]/probability_denominator))
-
-			kldivergence = kldivergence + attr_distribution[i][node_attr[i]]*math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
-			kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
+			if i == 0 or i == 2:
+				kldivergence = kldivergence + attr_distribution[i][node_attr[i]]*math.log(attr_distribution[i][node_attr[i]]/(attr_distribution[i][node_attr[i]]-1))
+				kldivergence = kldivergence + (attr_distribution[i][node_attr[i]]-1)*math.log((attr_distribution[i][node_attr[i]]-1)/attr_distribution[i][node_attr[i]])
 
 			# kldivergence = kldivergence + degree_distribution[bin]*math.log(degree_distribution[bin]/(degree_distribution[bin]-1))
 			# kldivergence = kldivergence + (degree_distribution[bin]-1)*math.log((degree_distribution[bin]-1)/(degree_distribution[bin]))
 
-		return (degree-graph.degree(node_id))*kldivergence
+		return (degree-graph.degree(node_id))
 		#return (degree)*kldivergence
 	def create_public_graph(self, node_file, edge_file):
 		graph = nx.Graph()
