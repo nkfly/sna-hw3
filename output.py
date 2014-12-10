@@ -124,18 +124,18 @@ def attr_output():
 		testsum = 0.0
 		for n in graph.nodes():
 			if node_attr_dict[n][j] not in attr_distribution[j]:
-				attr_distribution[j][node_attr_dict[n][j]] = 0.0
+				attr_distribution[j][node_attr_dict[n][j]] = 1.0
 			attr_distribution[j][node_attr_dict[n][j]] = attr_distribution[j][node_attr_dict[n][j]] + 1.0
 			all = all + 1.0
+		for i in range(attr_len(j)):
+			if i not in attr_distribution[j]:
+				attr_distribution[j][i] = 1.0
 		for atr in attr_distribution[j]:
 			attr_distribution[j][atr] = attr_distribution[j][atr] / all
 			testsum = testsum + attr_distribution[j][atr]
 		if testsum < 0.9999 or testsum > 1.0001:
 			for atr in attr_distribution[j]:
 				attr_distribution[j][atr] = attr_distribution[j][atr] / testsum
-		for i in range(attr_len(j)):
-			if i not in attr_distribution[j]:
-				attr_distribution[j][i] = 0.0
 		maxkey = sorted(attr_distribution[j].items(), key=itemgetter(0))
 		f = open('node_attr_' + str(j + 1) + '.txt', 'w')
 		for x in maxkey:
